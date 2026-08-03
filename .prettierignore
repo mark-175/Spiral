@@ -1,0 +1,15 @@
+node_modules
+dist
+.expo
+web-build
+server/prisma/migrations
+package-lock.json
+
+# Not authored by this scaffold - leave Expo template/vendor files as generated
+apps/mobile-web/expo-env.d.ts
+apps/mobile-web/scripts/reset-project.js
+apps/mobile-web/assets/**
+apps/mobile-web/tsconfig.json
+
+# Pre-existing project doc, not to be reformatted by tooling
+CLAUDE.md
