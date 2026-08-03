@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  areas Area[]
+}
+
+model Area {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  importance  Int
+  createdAt   DateTime  @default(now())
+  archivedAt  DateTime?
+
+  user               User               @relation(fields: [userId], references: [id])
+  goals              Goal[]
+  dailyReviews       DailyReview[]
+  weeklyReflections  WeeklyReflection[]
+
+  @@index([userId])
+}
+
+enum GoalStatus {
+  active
+  completed
+  abandoned
+}
+
+model Goal {
+  id          String     @id @default(cuid())
+  areaId      String
+  name        String
+  description String?
+  targetDate  DateTime?  @db.Date
+  status      GoalStatus @default(active)
+  createdAt   DateTime   @default(now())
+  completedAt DateTime?
+
+  area    Area     @relation(fields: [areaId], references: [id])
+  actions Action[]
+
+  // Only one GoalStatus.active goal per area is allowed, but that rule is
+  // enforced in application logic rather than a DB constraint (see CLAUDE.md).
+  @@index([areaId])
+}
+
+model Action {
+  id          String    @id @default(cuid())
+  goalId      String
+  description String
+  frequency   String
+  createdAt   DateTime  @default(now())
+  archivedAt  DateTime?
+
+  goal Goal        @relation(fields: [goalId], references: [id])
+  logs ActionLog[]
+
+  @@index([goalId])
+}
+
+model ActionLog {
+  id       String   @id @default(cuid())
+  actionId String
+  date     DateTime @db.Date
+  note     String?
+
+  action Action @relation(fields: [actionId], references: [id])
+
+  @@index([actionId])
+}
+
+model DailyReview {
+  id        String   @id @default(cuid())
+  areaId    String
+  date      DateTime @db.Date
+  answers   Json
+  createdAt DateTime @default(now())
+
+  area Area @relation(fields: [areaId], references: [id])
+
+  @@unique([areaId, date])
+}
+
+model WeeklyReflection {
+  id            String   @id @default(cuid())
+  areaId        String
+  weekStartDate DateTime @db.Date
+  answers       Json
+  createdAt     DateTime @default(now())
+
+  area Area @relation(fields: [areaId], references: [id])
+
+  @@unique([areaId, weekStartDate])
+}
