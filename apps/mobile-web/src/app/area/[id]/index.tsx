@@ -1,21 +1,42 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AreaNotFound } from '@/components/AreaNotFound';
-import { Button } from '@/components/ui/Button';
-import { LogRow } from '@/components/ui/LogRow';
-import { SectionLabel } from '@/components/ui/SectionLabel';
 import { BackLink } from '@/components/ui/BackLink';
-import { useActiveArea } from '@/hooks/useActiveArea';
+import { Button } from '@/components/ui/Button';
+import { SectionLabel } from '@/components/ui/SectionLabel';
+import { useAsync } from '@/hooks/useAsync';
+import { ApiError, getArea, getErrorMessage } from '@/lib/api';
+import { formatDateLabel } from '@/lib/date';
 import { Colors, Fonts } from '@/theme/tokens';
 import { sharedStyles } from '@/theme/sharedStyles';
 
 export default function AreaDetailScreen() {
   const router = useRouter();
-  const area = useActiveArea();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { data: area, loading, error } = useAsync(() => getArea(id), [id]);
+
+  if (loading) {
+    return (
+      <View style={sharedStyles.pageWrap}>
+        <Text style={styles.status}>Loading area…</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return <AreaNotFound onBack={() => router.push('/')} />;
+    }
+    return (
+      <View style={sharedStyles.pageWrap}>
+        <Text style={styles.errorText}>Couldn't load this area: {getErrorMessage(error)}</Text>
+      </View>
+    );
+  }
 
   if (!area) {
-    return <AreaNotFound onBack={() => router.push('/')} />;
+    return null;
   }
 
   const importanceLabel = `${String(area.importance).padStart(2, '0')} / 10`;
@@ -25,7 +46,6 @@ export default function AreaDetailScreen() {
       <BackLink label="← Dashboard" onPress={() => router.push('/')} />
 
       <View style={styles.headerRow}>
-        <View style={[styles.headerDot, { backgroundColor: area.accent }]} />
         <Text style={sharedStyles.h1}>{area.name}</Text>
         <Text style={styles.importanceBadge}>{importanceLabel}</Text>
         <View style={styles.headerSpacer} />
@@ -33,21 +53,39 @@ export default function AreaDetailScreen() {
           Edit Area →
         </Text>
       </View>
-      <Text style={sharedStyles.description}>{area.description}</Text>
+      {area.description && <Text style={sharedStyles.description}>{area.description}</Text>}
 
       <SectionLabel>Current Goal</SectionLabel>
-      <View style={styles.goalCard}>
-        <View style={styles.goalTopRow}>
-          <View>
-            <Text style={styles.goalName}>{area.goal.name}</Text>
-            <Text style={styles.goalDate}>Target: {area.goal.targetDateLabel}</Text>
+      {area.activeGoal ? (
+        <View style={styles.goalCard}>
+          <View style={styles.goalTopRow}>
+            <View>
+              <Text style={styles.goalName}>{area.activeGoal.name}</Text>
+              {area.activeGoal.targetDate && (
+                <Text style={styles.goalDate}>
+                  Target: {formatDateLabel(area.activeGoal.targetDate)}
+                </Text>
+              )}
+            </View>
+            <Text
+              style={styles.inlineLink}
+              onPress={() => router.push(`/area/${area.id}/goal-edit`)}
+            >
+              Edit →
+            </Text>
           </View>
-          <Text style={styles.inlineLink} onPress={() => router.push(`/area/${area.id}/goal-edit`)}>
-            Edit →
-          </Text>
+          {area.activeGoal.description && (
+            <Text style={styles.goalDesc}>{area.activeGoal.description}</Text>
+          )}
         </View>
-        <Text style={styles.goalDesc}>{area.goal.description}</Text>
-      </View>
+      ) : (
+        <View style={styles.goalCard}>
+          <Text style={styles.goalDesc}>No active goal yet.</Text>
+          <View style={styles.setGoalAction}>
+            <Button label="Set a Goal" onPress={() => router.push(`/area/${area.id}/goal-edit`)} />
+          </View>
+        </View>
+      )}
 
       <View style={sharedStyles.actionRow}>
         <Button
@@ -67,28 +105,26 @@ export default function AreaDetailScreen() {
           }
         />
       </View>
-
-      <SectionLabel>Action Log</SectionLabel>
-      <View>
-        {area.actionLog.map((entry, index) => (
-          <LogRow key={index} dateLabel={entry.dateLabel} text={entry.text} />
-        ))}
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  status: {
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
+  errorText: {
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    color: Colors.danger,
+  },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     marginBottom: 12,
-  },
-  headerDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
   },
   headerSpacer: {
     flex: 1,
@@ -141,5 +177,8 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginTop: 14,
     maxWidth: 480,
+  },
+  setGoalAction: {
+    marginTop: 16,
   },
 });

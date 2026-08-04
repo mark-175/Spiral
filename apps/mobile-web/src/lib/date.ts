@@ -28,3 +28,12 @@ export function formatWeekRangeLabel(date: Date = new Date()): string {
 
   return `Week of ${startLabel} – ${endLabel}`;
 }
+
+export function formatDateLabel(isoDate: string): string {
+  const date = new Date(`${isoDate}T00:00:00.000Z`);
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+}
