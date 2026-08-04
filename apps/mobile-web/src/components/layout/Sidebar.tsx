@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAsync } from '@/hooks/useAsync';
 import { getAreaAccent } from '@/lib/accent';
-import { getAreas } from '@/lib/api';
+import { getAreas, logout } from '@/lib/api';
 import { Colors, Fonts } from '@/theme/tokens';
 
 export function Sidebar() {
@@ -11,6 +11,11 @@ export function Sidebar() {
   const pathname = usePathname();
   const { data: areas } = useAsync(getAreas, [pathname]);
   const areaList = areas ?? [];
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/login');
+  };
 
   const isDashboardActive = pathname === '/';
   const isWeeklyActive = pathname === '/weekly-reflection';
@@ -59,6 +64,10 @@ export function Sidebar() {
         <Text style={[styles.navText, isWeeklyActive && styles.navTextActive]}>
           Weekly Reflection
         </Text>
+      </Pressable>
+
+      <Pressable onPress={handleLogout} style={[styles.navRow, styles.navRowIndented]}>
+        <Text style={styles.navAddText}>Log out</Text>
       </Pressable>
     </View>
   );

@@ -1,11 +1,60 @@
-import { Slot } from 'expo-router';
+import { Slot, usePathname, useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { Sidebar } from '@/components/layout/Sidebar';
+import { useAsync } from '@/hooks/useAsync';
+import { getCurrentUser } from '@/lib/api';
 import { Colors } from '@/theme/tokens';
 
+const PUBLIC_ROUTES = ['/login', '/signup'];
+
 export default function RootLayout() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { data: user, loading } = useAsync(getCurrentUser, [pathname]);
+
+  const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
+  const isAuthenticated = Boolean(user);
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+    if (!isAuthenticated && !isPublicRoute) {
+      router.replace('/login');
+    }
+    if (isAuthenticated && isPublicRoute) {
+      router.replace('/');
+    }
+  }, [loading, isAuthenticated, isPublicRoute, router]);
+
+  if (loading) {
+    return (
+      <View style={styles.root}>
+        <StatusBar style="light" />
+      </View>
+    );
+  }
+
+  if (isPublicRoute && !isAuthenticated) {
+    return (
+      <View style={styles.root}>
+        <StatusBar style="light" />
+        <Slot />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <View style={styles.root}>
+        <StatusBar style="light" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
