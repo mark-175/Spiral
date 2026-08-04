@@ -11,6 +11,7 @@ import { TextArea } from '@/components/ui/TextArea';
 import { TextField } from '@/components/ui/TextField';
 import { useAsync } from '@/hooks/useAsync';
 import { ApiError, getArea, getErrorMessage, saveGoal } from '@/lib/api';
+import { todayISODate } from '@/lib/date';
 import { Colors, Fonts } from '@/theme/tokens';
 import { sharedStyles } from '@/theme/sharedStyles';
 
@@ -20,7 +21,7 @@ export default function GoalEditScreen() {
   const { data: area, loading, error } = useAsync(() => getArea(id), [id]);
 
   const [name, setName] = useState('');
-  const [targetDate, setTargetDate] = useState('');
+  const [targetDate, setTargetDate] = useState(todayISODate());
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -28,7 +29,7 @@ export default function GoalEditScreen() {
   useEffect(() => {
     if (area?.activeGoal) {
       setName(area.activeGoal.name);
-      setTargetDate(area.activeGoal.targetDate ?? '');
+      setTargetDate(area.activeGoal.targetDate ?? todayISODate());
       setDescription(area.activeGoal.description ?? '');
     }
   }, [area]);

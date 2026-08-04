@@ -29,6 +29,12 @@ export function formatWeekRangeLabel(date: Date = new Date()): string {
   return `Week of ${startLabel} – ${endLabel}`;
 }
 
+export function todayISODate(date: Date = new Date()): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
 export function formatDateLabel(isoDate: string): string {
   const date = new Date(`${isoDate}T00:00:00.000Z`);
   return new Intl.DateTimeFormat('en-US', {
