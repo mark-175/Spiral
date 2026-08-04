@@ -16,6 +16,7 @@ export function getErrorMessage(error: unknown): string {
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -134,4 +135,25 @@ export function saveWeeklyReflection(
     method: 'POST',
     body: JSON.stringify(input),
   });
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+}
+
+export function signup(email: string, password: string): Promise<AuthUser> {
+  return request('/auth/signup', { method: 'POST', body: JSON.stringify({ email, password }) });
+}
+
+export function login(email: string, password: string): Promise<AuthUser> {
+  return request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+}
+
+export function logout(): Promise<void> {
+  return request('/auth/logout', { method: 'POST' });
+}
+
+export function getCurrentUser(): Promise<AuthUser> {
+  return request('/auth/me');
 }
