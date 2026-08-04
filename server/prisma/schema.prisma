@@ -8,11 +8,25 @@ datasource db {
 }
 
 model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  areas    Area[]
+  sessions Session[]
+}
+
+model Session {
   id        String   @id @default(cuid())
-  email     String   @unique
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
   createdAt DateTime @default(now())
 
-  areas Area[]
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 model Area {
