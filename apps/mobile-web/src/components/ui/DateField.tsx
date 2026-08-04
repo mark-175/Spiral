@@ -53,16 +53,6 @@ export function DateField({ value, onChange }: DateFieldProps) {
   return (
     <View style={styles.row}>
       <Picker
-        style={styles.picker}
-        selectedValue={monthPart}
-        onValueChange={(next) => emit(yearPart, String(next), dayPart)}
-      >
-        <Picker.Item label="Month" value="" color={Colors.textMuted} />
-        {MONTHS.map((label, index) => (
-          <Picker.Item key={label} label={label} value={String(index + 1).padStart(2, '0')} />
-        ))}
-      </Picker>
-      <Picker
         style={styles.pickerNarrow}
         selectedValue={dayPart}
         onValueChange={(next) => emit(yearPart, monthPart, String(next))}
@@ -70,6 +60,16 @@ export function DateField({ value, onChange }: DateFieldProps) {
         <Picker.Item label="Day" value="" color={Colors.textMuted} />
         {dayOptions.map((day) => (
           <Picker.Item key={day} label={day} value={day} />
+        ))}
+      </Picker>
+      <Picker
+        style={styles.picker}
+        selectedValue={monthPart}
+        onValueChange={(next) => emit(yearPart, String(next), dayPart)}
+      >
+        <Picker.Item label="Month" value="" color={Colors.textMuted} />
+        {MONTHS.map((label, index) => (
+          <Picker.Item key={label} label={label} value={String(index + 1).padStart(2, '0')} />
         ))}
       </Picker>
       <Picker
