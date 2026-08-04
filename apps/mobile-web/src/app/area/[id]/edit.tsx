@@ -1,30 +1,83 @@
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AreaNotFound } from '@/components/AreaNotFound';
 import { BackLink } from '@/components/ui/BackLink';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
+import { ImportanceSlider } from '@/components/ui/ImportanceSlider';
 import { TextArea } from '@/components/ui/TextArea';
 import { TextField } from '@/components/ui/TextField';
-import { useActiveArea } from '@/hooks/useActiveArea';
+import { useAsync } from '@/hooks/useAsync';
+import { ApiError, getArea, getErrorMessage, updateArea } from '@/lib/api';
 import { Colors, Fonts } from '@/theme/tokens';
 import { sharedStyles } from '@/theme/sharedStyles';
 
 export default function AreaEditScreen() {
   const router = useRouter();
-  const area = useActiveArea();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { data: area, loading, error } = useAsync(() => getArea(id), [id]);
 
-  const [name, setName] = useState(area?.name ?? '');
-  const [description, setDescription] = useState(area?.description ?? '');
-  const [importance, setImportance] = useState(area ? String(area.importance) : '');
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [importance, setImportance] = useState(5);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (area) {
+      setName(area.name);
+      setDescription(area.description ?? '');
+      setImportance(area.importance);
+    }
+  }, [area]);
+
+  if (loading) {
+    return (
+      <View style={sharedStyles.formWrap}>
+        <Text style={styles.status}>Loading…</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return <AreaNotFound onBack={() => router.push('/')} />;
+    }
+    return (
+      <View style={sharedStyles.formWrap}>
+        <Text style={styles.errorText}>Couldn't load this area: {getErrorMessage(error)}</Text>
+      </View>
+    );
+  }
 
   if (!area) {
-    return <AreaNotFound onBack={() => router.push('/')} />;
+    return null;
   }
 
   const goBackToDetail = () => router.push(`/area/${area.id}`);
+
+  const handleSave = async () => {
+    if (name.trim().length === 0) {
+      setSaveError('Name is required');
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await updateArea(area.id, {
+        name: name.trim(),
+        description: description.trim(),
+        importance,
+      });
+      goBackToDetail();
+    } catch (err) {
+      setSaveError(getErrorMessage(err));
+      setSaving(false);
+    }
+  };
 
   return (
     <View style={sharedStyles.formWrap}>
@@ -40,39 +93,33 @@ export default function AreaEditScreen() {
       </Field>
 
       <Field label="Importance">
-        <View style={styles.importanceRow}>
-          <TextField
-            value={importance}
-            onChangeText={setImportance}
-            keyboardType="number-pad"
-            width={80}
-          />
-          <Text style={styles.importanceHint}>
-            1 = low priority · 10 = defining priority right now
-          </Text>
-        </View>
+        <ImportanceSlider value={importance} onChange={setImportance} />
       </Field>
 
+      {saveError && <Text style={styles.errorText}>{saveError}</Text>}
+
       <View style={sharedStyles.formActions}>
-        <Button label="Save Area" onPress={goBackToDetail} />
-        <Button label="Cancel" variant="secondary" onPress={goBackToDetail} />
+        <Button label={saving ? 'Saving…' : 'Save Area'} onPress={handleSave} disabled={saving} />
+        <Button label="Cancel" variant="secondary" onPress={goBackToDetail} disabled={saving} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  status: {
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
   title: {
     marginBottom: 22,
   },
-  importanceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  importanceHint: {
+  errorText: {
     fontFamily: Fonts.sans,
-    fontSize: 12,
-    color: Colors.textMuted,
+    fontSize: 13,
+    color: Colors.danger,
+    marginTop: 8,
+    marginBottom: 8,
   },
 });
