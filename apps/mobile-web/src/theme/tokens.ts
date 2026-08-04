@@ -12,6 +12,7 @@ export const Colors = {
   text: '#E6E8EA',
   textSecondary: '#888C94',
   textMuted: '#54585F',
+  danger: '#E5484D',
 } as const;
 
 // Palette assigned to Areas of Development in creation order. The first four

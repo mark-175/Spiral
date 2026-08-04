@@ -6,15 +6,17 @@ interface ButtonProps {
   label: string;
   onPress: (event: GestureResponderEvent) => void;
   variant?: 'primary' | 'secondary';
+  disabled?: boolean;
 }
 
-export function Button({ label, onPress, variant = 'primary' }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', disabled = false }: ButtonProps) {
   const isPrimary = variant === 'primary';
 
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.base, isPrimary ? styles.primary : styles.secondary]}
+      disabled={disabled}
+      style={[styles.base, isPrimary ? styles.primary : styles.secondary, disabled && styles.disabled]}
     >
       <Text style={isPrimary ? styles.primaryLabel : styles.secondaryLabel}>{label}</Text>
     </Pressable>
@@ -35,6 +37,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  disabled: {
+    opacity: 0.5,
   },
   primaryLabel: {
     fontFamily: Fonts.sans,
