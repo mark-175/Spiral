@@ -4,6 +4,7 @@ interface Env {
   nodeEnv: string;
   port: number;
   databaseUrl: string;
+  corsOrigin: string;
 }
 
 function requireEnv(name: string): string {
@@ -18,4 +19,5 @@ export const env: Env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: Number(process.env.PORT ?? 3000),
   databaseUrl: requireEnv('DATABASE_URL'),
+  corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:8083',
 };
