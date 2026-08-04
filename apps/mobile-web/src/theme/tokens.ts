@@ -1,71 +1,46 @@
-import '@/global.css';
-
 import { Platform } from 'react-native';
 
+// Converted from the approved Development OS mockup's OKLCH palette to hex,
+// since React Native's style engine doesn't support oklch() on native platforms.
 export const Colors = {
-  light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
-  },
-  dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
-  },
+  bg: '#0A0B0D',
+  sidebarBg: '#060708',
+  surface: '#121416',
+  surfaceHover: '#1A1C1F',
+  border: '#2A2B2E',
+  borderSubtle: '#1E1F22',
+  text: '#E6E8EA',
+  textSecondary: '#888C94',
+  textMuted: '#54585F',
 } as const;
 
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
-
-// Placeholder palette assigned to Areas of Development in creation order.
-// Replace with final values once the Claude Design mockups are implemented.
-export const AreaAccentColors = [
-  '#3C87F7',
-  '#F76E3C',
-  '#3CF7A6',
-  '#C33CF7',
-  '#F7D33C',
+// Palette assigned to Areas of Development in creation order. The first four
+// values match the mockup's sample areas (Developer, Athlete, Writer, Piano Player).
+export const AreaAccentPalette = [
+  '#59AAF8',
+  '#5BBD74',
+  '#AC89E8',
+  '#E69C3A',
+  '#F76E9C',
   '#3CD8F7',
 ] as const;
 
 export const Fonts = Platform.select({
+  web: {
+    sans: '-apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif',
+    mono: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
+  },
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+    sans: 'System',
+    mono: 'Menlo',
   },
   default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
+    sans: 'sans-serif',
     mono: 'monospace',
   },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
-  },
-});
+})!;
 
-export const Spacing = {
-  half: 2,
-  one: 4,
-  two: 8,
-  three: 16,
-  four: 24,
-  five: 32,
-  six: 64,
+export const MaxContentWidth = {
+  page: 760,
+  form: 560,
 } as const;
-
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
-export const MaxContentWidth = 800;
