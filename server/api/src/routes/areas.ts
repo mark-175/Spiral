@@ -2,7 +2,6 @@ import { Router } from 'express';
 
 import { asyncHandler } from '../lib/asyncHandler';
 import { findOwnedArea, serializeArea } from '../lib/areas';
-import { getCurrentUserId } from '../lib/currentUser';
 import { prisma } from '../lib/prisma';
 import { optionalString, requireImportance, requireNonEmptyString } from '../lib/validation';
 
@@ -10,8 +9,8 @@ export const areasRouter = Router();
 
 areasRouter.get(
   '/areas',
-  asyncHandler(async (_req, res) => {
-    const userId = await getCurrentUserId();
+  asyncHandler(async (req, res) => {
+    const userId = req.userId!;
     const areas = await prisma.area.findMany({
       where: { userId, archivedAt: null },
       orderBy: { importance: 'desc' },
@@ -23,7 +22,7 @@ areasRouter.get(
 areasRouter.post(
   '/areas',
   asyncHandler(async (req, res) => {
-    const userId = await getCurrentUserId();
+    const userId = req.userId!;
     const name = requireNonEmptyString(req.body.name, 'name');
     const description = optionalString(req.body.description, 'description');
     const importance = requireImportance(req.body.importance);
@@ -38,7 +37,7 @@ areasRouter.post(
 areasRouter.get(
   '/areas/:id',
   asyncHandler(async (req, res) => {
-    const userId = await getCurrentUserId();
+    const userId = req.userId!;
     const area = await findOwnedArea(req.params.id!, userId);
     if (!area) {
       res.status(404).json({ error: 'Area not found' });
@@ -51,7 +50,7 @@ areasRouter.get(
 areasRouter.patch(
   '/areas/:id',
   asyncHandler(async (req, res) => {
-    const userId = await getCurrentUserId();
+    const userId = req.userId!;
     const area = await findOwnedArea(req.params.id!, userId);
     if (!area) {
       res.status(404).json({ error: 'Area not found' });

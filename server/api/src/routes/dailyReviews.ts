@@ -3,7 +3,6 @@ import { Router } from 'express';
 
 import { asyncHandler } from '../lib/asyncHandler';
 import { findOwnedArea, startOfToday } from '../lib/areas';
-import { getCurrentUserId } from '../lib/currentUser';
 import { prisma } from '../lib/prisma';
 import { ValidationError } from '../lib/validation';
 
@@ -41,7 +40,7 @@ function parseAnswers(body: unknown): DailyReviewAnswers {
 dailyReviewsRouter.get(
   '/areas/:id/daily-reviews',
   asyncHandler(async (req, res) => {
-    const userId = await getCurrentUserId();
+    const userId = req.userId!;
     const area = await findOwnedArea(req.params.id!, userId);
     if (!area) {
       res.status(404).json({ error: 'Area not found' });
@@ -66,7 +65,7 @@ dailyReviewsRouter.get(
 dailyReviewsRouter.post(
   '/areas/:id/daily-reviews',
   asyncHandler(async (req, res) => {
-    const userId = await getCurrentUserId();
+    const userId = req.userId!;
     const area = await findOwnedArea(req.params.id!, userId);
     if (!area) {
       res.status(404).json({ error: 'Area not found' });
