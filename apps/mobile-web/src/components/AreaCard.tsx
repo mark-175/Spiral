@@ -1,10 +1,18 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { Area } from '@/data/areas';
+import type { AreaSummary } from '@/lib/api';
 import { Colors, Fonts } from '@/theme/tokens';
 
-export function AreaCard({ area, onPress }: { area: Area; onPress: () => void }) {
+export function AreaCard({
+  area,
+  accent,
+  onPress,
+}: {
+  area: AreaSummary;
+  accent: string;
+  onPress: () => void;
+}) {
   const [hovered, setHovered] = useState(false);
 
   const importanceLabel = `${String(area.importance).padStart(2, '0')} / 10`;
@@ -19,14 +27,14 @@ export function AreaCard({ area, onPress }: { area: Area; onPress: () => void })
       style={[
         styles.card,
         {
-          borderLeftColor: area.accent,
+          borderLeftColor: accent,
           backgroundColor: hovered ? Colors.surfaceHover : Colors.surface,
         },
       ]}
     >
       <View style={styles.topRow}>
         <View style={styles.leftGroup}>
-          <View style={[styles.dot, { backgroundColor: area.accent }]} />
+          <View style={[styles.dot, { backgroundColor: accent }]} />
           <Text style={styles.name}>{area.name}</Text>
           <Text style={styles.importanceBadge}>{importanceLabel}</Text>
         </View>
@@ -35,7 +43,9 @@ export function AreaCard({ area, onPress }: { area: Area; onPress: () => void })
           <Text style={styles.todayText}>{todayText}</Text>
         </View>
       </View>
-      <Text style={styles.goalText}>{area.goal.name}</Text>
+      <Text style={styles.goalText}>
+        {area.activeGoal ? area.activeGoal.name : 'No active goal yet'}
+      </Text>
     </Pressable>
   );
 }

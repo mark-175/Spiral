@@ -1,13 +1,16 @@
 import { useRouter, usePathname } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { getAreasByImportance } from '@/data/areas';
+import { useAsync } from '@/hooks/useAsync';
+import { getAreaAccent } from '@/lib/accent';
+import { getAreas } from '@/lib/api';
 import { Colors, Fonts } from '@/theme/tokens';
 
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const areas = getAreasByImportance();
+  const { data: areas } = useAsync(getAreas, [pathname]);
+  const areaList = areas ?? [];
 
   const isDashboardActive = pathname === '/';
   const isWeeklyActive = pathname === '/weekly-reflection';
@@ -27,7 +30,7 @@ export function Sidebar() {
       </Pressable>
 
       <Text style={styles.navLabel}>Areas</Text>
-      {areas.map((area) => {
+      {areaList.map((area) => {
         const isActive = pathname.startsWith(`/area/${area.id}`);
         return (
           <Pressable
@@ -35,11 +38,17 @@ export function Sidebar() {
             onPress={() => router.push(`/area/${area.id}`)}
             style={[styles.navRow, isActive && styles.navRowActive]}
           >
-            <View style={[styles.navDot, { backgroundColor: area.accent }]} />
+            <View style={[styles.navDot, { backgroundColor: getAreaAccent(areaList, area.id) }]} />
             <Text style={[styles.navText, isActive && styles.navTextActive]}>{area.name}</Text>
           </Pressable>
         );
       })}
+      <Pressable
+        onPress={() => router.push('/area/new')}
+        style={[styles.navRow, styles.navRowIndented]}
+      >
+        <Text style={styles.navAddText}>+ Add Area</Text>
+      </Pressable>
 
       <View style={styles.spacer} />
 
@@ -120,6 +129,11 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sans,
     fontSize: 14,
     color: Colors.textSecondary,
+  },
+  navAddText: {
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    color: Colors.textMuted,
   },
   navTextActive: {
     color: Colors.text,
