@@ -1,4 +1,5 @@
 import { Picker } from '@react-native-picker/picker';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Colors, Fonts } from '@/theme/tokens';
@@ -22,24 +23,45 @@ function daysInMonth(year: number, month: number): number {
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
+interface DateParts {
+  year: string;
+  month: string;
+  day: string;
+}
+
+function splitValue(value: string): DateParts {
+  const parts = value ? value.split('-') : [];
+  return { year: parts[0] ?? '', month: parts[1] ?? '', day: parts[2] ?? '' };
+}
+
 interface DateFieldProps {
   value: string;
   onChange: (value: string) => void;
 }
 
 export function DateField({ value, onChange }: DateFieldProps) {
-  const parts = value ? value.split('-') : [];
-  const yearPart = parts[0] ?? '';
-  const monthPart = parts[1] ?? '';
-  const dayPart = parts[2] ?? '';
+  const [year, setYear] = useState(() => splitValue(value).year);
+  const [month, setMonth] = useState(() => splitValue(value).month);
+  const [day, setDay] = useState(() => splitValue(value).day);
+
+  useEffect(() => {
+    const next = splitValue(value);
+    setYear(next.year);
+    setMonth(next.month);
+    setDay(next.day);
+  }, [value]);
 
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 11 }, (_, i) => String(currentYear + i));
 
-  const maxDay = yearPart && monthPart ? daysInMonth(Number(yearPart), Number(monthPart)) : 31;
+  const maxDay = year && month ? daysInMonth(Number(year), Number(month)) : 31;
   const dayOptions = Array.from({ length: maxDay }, (_, i) => String(i + 1).padStart(2, '0'));
 
-  const emit = (nextYear: string, nextMonth: string, nextDay: string) => {
+  const update = (nextYear: string, nextMonth: string, nextDay: string) => {
+    setYear(nextYear);
+    setMonth(nextMonth);
+    setDay(nextDay);
+
     if (!nextYear || !nextMonth || !nextDay) {
       onChange('');
       return;
@@ -50,22 +72,29 @@ export function DateField({ value, onChange }: DateFieldProps) {
     onChange(`${nextYear}-${nextMonth}-${clampedDay}`);
   };
 
+  const clear = () => {
+    setYear('');
+    setMonth('');
+    setDay('');
+    onChange('');
+  };
+
   return (
     <View style={styles.row}>
       <Picker
         style={styles.pickerNarrow}
-        selectedValue={dayPart}
-        onValueChange={(next) => emit(yearPart, monthPart, String(next))}
+        selectedValue={day}
+        onValueChange={(next) => update(year, month, String(next))}
       >
         <Picker.Item label="Day" value="" color={Colors.textMuted} />
-        {dayOptions.map((day) => (
-          <Picker.Item key={day} label={day} value={day} />
+        {dayOptions.map((d) => (
+          <Picker.Item key={d} label={d} value={d} />
         ))}
       </Picker>
       <Picker
         style={styles.picker}
-        selectedValue={monthPart}
-        onValueChange={(next) => emit(yearPart, String(next), dayPart)}
+        selectedValue={month}
+        onValueChange={(next) => update(year, String(next), day)}
       >
         <Picker.Item label="Month" value="" color={Colors.textMuted} />
         {MONTHS.map((label, index) => (
@@ -74,16 +103,16 @@ export function DateField({ value, onChange }: DateFieldProps) {
       </Picker>
       <Picker
         style={styles.pickerNarrow}
-        selectedValue={yearPart}
-        onValueChange={(next) => emit(String(next), monthPart, dayPart)}
+        selectedValue={year}
+        onValueChange={(next) => update(String(next), month, day)}
       >
         <Picker.Item label="Year" value="" color={Colors.textMuted} />
-        {yearOptions.map((year) => (
-          <Picker.Item key={year} label={year} value={year} />
+        {yearOptions.map((y) => (
+          <Picker.Item key={y} label={y} value={y} />
         ))}
       </Picker>
-      {value.length > 0 && (
-        <Text style={styles.clearLink} onPress={() => onChange('')}>
+      {(year || month || day) && (
+        <Text style={styles.clearLink} onPress={clear}>
           Clear
         </Text>
       )}
