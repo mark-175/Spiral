@@ -1,26 +1,86 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { TextArea } from '@/components/ui/TextArea';
-import { getAreasByImportance, WEEKLY_QUESTIONS } from '@/data/areas';
+import { WEEKLY_QUESTIONS } from '@/data/weeklyQuestions';
+import { useAsync } from '@/hooks/useAsync';
+import { getAreaAccent } from '@/lib/accent';
+import { getAreas, getErrorMessage, saveWeeklyReflection, type WeeklyAnswers } from '@/lib/api';
 import { formatWeekRangeLabel } from '@/lib/date';
 import { Colors, Fonts } from '@/theme/tokens';
 import { sharedStyles } from '@/theme/sharedStyles';
 
+const EMPTY_ANSWERS: WeeklyAnswers = {
+  wentWell: '',
+  couldBeBetter: '',
+  prevented: '',
+  differently: '',
+  proudOf: '',
+};
+
 export default function WeeklyReflectionScreen() {
   const router = useRouter();
   const { areaId } = useLocalSearchParams<{ areaId?: string }>();
-  const areas = getAreasByImportance();
+  const { data: areas, loading, error } = useAsync(getAreas, []);
 
-  const [selectedAreaId, setSelectedAreaId] = useState(areaId ?? areas[0]?.id ?? '');
+  const [selectedAreaId, setSelectedAreaId] = useState(areaId ?? '');
+  const [answers, setAnswers] = useState<WeeklyAnswers>(EMPTY_ANSWERS);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedAreaId && areas && areas.length > 0) {
+      setSelectedAreaId(areas[0].id);
+    }
+  }, [areas, selectedAreaId]);
+
+  if (loading) {
+    return (
+      <View style={sharedStyles.formWrap}>
+        <Text style={styles.status}>Loading…</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={sharedStyles.formWrap}>
+        <Text style={styles.errorText}>Couldn't load areas: {getErrorMessage(error)}</Text>
+      </View>
+    );
+  }
+
+  if (!areas || areas.length === 0) {
+    return (
+      <View style={sharedStyles.formWrap}>
+        <Text style={sharedStyles.h1}>Weekly Reflection</Text>
+        <Text style={sharedStyles.subtitle}>Create an Area first to log a reflection.</Text>
+      </View>
+    );
+  }
+
   const selectedArea = areas.find((area) => area.id === selectedAreaId) ?? areas[0];
 
-  if (!selectedArea) {
-    return null;
-  }
+  const handleAreaChange = (nextId: string) => {
+    setSelectedAreaId(nextId);
+    setAnswers(EMPTY_ANSWERS);
+    setSaveError(null);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await saveWeeklyReflection(selectedArea.id, answers);
+      router.push(`/area/${selectedArea.id}`);
+    } catch (err) {
+      setSaveError(getErrorMessage(err));
+      setSaving(false);
+    }
+  };
 
   return (
     <View style={sharedStyles.formWrap}>
@@ -32,9 +92,9 @@ export default function WeeklyReflectionScreen() {
           <Chip
             key={area.id}
             label={area.name}
-            accent={area.accent}
+            accent={getAreaAccent(areas, area.id)}
             selected={area.id === selectedArea.id}
-            onPress={() => setSelectedAreaId(area.id)}
+            onPress={() => handleAreaChange(area.id)}
           />
         ))}
       </View>
@@ -43,20 +103,37 @@ export default function WeeklyReflectionScreen() {
         <View key={question.key} style={styles.promptBlock}>
           <Text style={styles.promptLabel}>{question.label}</Text>
           <TextArea
-            key={`${selectedArea.id}-${question.key}`}
-            defaultValue={selectedArea.weeklyAnswers[question.key]}
+            value={answers[question.key]}
+            onChangeText={(text) => setAnswers((prev) => ({ ...prev, [question.key]: text }))}
           />
         </View>
       ))}
 
+      {saveError && <Text style={styles.errorText}>{saveError}</Text>}
+
       <View style={sharedStyles.formActions}>
-        <Button label="Save Reflection" onPress={() => router.push(`/area/${selectedArea.id}`)} />
+        <Button
+          label={saving ? 'Saving…' : 'Save Reflection'}
+          onPress={handleSave}
+          disabled={saving}
+        />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  status: {
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
+  errorText: {
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    color: Colors.danger,
+    marginBottom: 12,
+  },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
