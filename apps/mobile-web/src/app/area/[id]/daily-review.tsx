@@ -1,97 +1,128 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { AreaNotFound } from '@/components/AreaNotFound';
 import { BackLink } from '@/components/ui/BackLink';
 import { Button } from '@/components/ui/Button';
 import { TextArea } from '@/components/ui/TextArea';
-import { useActiveArea } from '@/hooks/useActiveArea';
+import { useAsync } from '@/hooks/useAsync';
+import { ApiError, getArea, getErrorMessage, saveDailyReview } from '@/lib/api';
 import { formatTodayLabel } from '@/lib/date';
 import { Colors, Fonts } from '@/theme/tokens';
 import { sharedStyles } from '@/theme/sharedStyles';
 
 export default function DailyReviewScreen() {
   const router = useRouter();
-  const area = useActiveArea();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { data: area, loading, error } = useAsync(() => getArea(id), [id]);
 
-  const [madeProgress, setMadeProgress] = useState(true);
-  const [whatHelped, setWhatHelped] = useState(area?.dailyPrompt2 ?? '');
+  const [improved, setImproved] = useState('');
+  const [couldImprove, setCouldImprove] = useState('');
   const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  if (loading) {
+    return (
+      <View style={sharedStyles.formWrap}>
+        <Text style={styles.status}>Loading…</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return <AreaNotFound onBack={() => router.push('/')} />;
+    }
+    return (
+      <View style={sharedStyles.formWrap}>
+        <Text style={styles.errorText}>Couldn't load this area: {getErrorMessage(error)}</Text>
+      </View>
+    );
+  }
 
   if (!area) {
-    return <AreaNotFound onBack={() => router.push('/')} />;
+    return null;
   }
 
   const goBackToDetail = () => router.push(`/area/${area.id}`);
+
+  const handleSave = async () => {
+    if (improved.trim().length === 0) {
+      setSaveError('This field is required');
+      return;
+    }
+    if (couldImprove.trim().length === 0) {
+      setSaveError('This field is required');
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await saveDailyReview(area.id, {
+        improved: improved.trim(),
+        couldImprove: couldImprove.trim(),
+        notes: notes.trim(),
+      });
+      goBackToDetail();
+    } catch (err) {
+      setSaveError(getErrorMessage(err));
+      setSaving(false);
+    }
+  };
 
   return (
     <View style={sharedStyles.formWrap}>
       <BackLink label={`← ${area.name}`} onPress={goBackToDetail} />
 
-      <View style={styles.headerRow}>
-        <View style={[styles.headerDot, { backgroundColor: area.accent }]} />
-        <Text style={sharedStyles.h1}>Daily Review</Text>
-      </View>
+      <Text style={sharedStyles.h1}>Daily Review</Text>
       <Text style={sharedStyles.subtitle}>
         {formatTodayLabel()} · {area.name}
       </Text>
 
       <View style={styles.promptBlock}>
-        <Text style={styles.promptLabel}>Did you make meaningful progress today?</Text>
-        <View style={styles.toggleRow}>
-          <Pressable
-            onPress={() => setMadeProgress(true)}
-            style={[styles.toggle, madeProgress ? styles.toggleActive : styles.toggleInactive]}
-          >
-            <Text style={madeProgress ? styles.toggleActiveText : styles.toggleInactiveText}>
-              Yes
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setMadeProgress(false)}
-            style={[styles.toggle, !madeProgress ? styles.toggleActive : styles.toggleInactive]}
-          >
-            <Text style={!madeProgress ? styles.toggleActiveText : styles.toggleInactiveText}>
-              No
-            </Text>
-          </Pressable>
-        </View>
+        <Text style={styles.promptLabel}>How did you improve yourself as a {area.name} today?</Text>
+        <TextArea value={improved} onChangeText={setImproved} minHeight={84} />
       </View>
 
       <View style={styles.promptBlock}>
-        <Text style={styles.promptLabel}>What did you do that made you better?</Text>
-        <TextArea value={whatHelped} onChangeText={setWhatHelped} minHeight={84} />
+        <Text style={styles.promptLabel}>
+          What didn't go very well, and how could you improve it next time?
+        </Text>
+        <TextArea value={couldImprove} onChangeText={setCouldImprove} minHeight={84} />
       </View>
 
       <View style={styles.promptBlock}>
         <Text style={styles.promptLabel}>Anything else worth remembering?</Text>
-        <TextArea
-          value={notes}
-          onChangeText={setNotes}
-          placeholder="Optional notes"
-          minHeight={56}
-        />
+        <TextArea value={notes} onChangeText={setNotes} placeholder="Optional notes" minHeight={56} />
       </View>
 
+      {saveError && <Text style={styles.errorText}>{saveError}</Text>}
+
       <View style={sharedStyles.formActions}>
-        <Button label="Save Today's Review" onPress={goBackToDetail} />
+        <Button
+          label={saving ? 'Saving…' : "Save Today's Review"}
+          onPress={handleSave}
+          disabled={saving}
+        />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
+  status: {
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    color: Colors.textSecondary,
   },
-  headerDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  errorText: {
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    color: Colors.danger,
+    marginBottom: 8,
   },
   promptBlock: {
     marginBottom: 28,
@@ -102,33 +133,5 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: Colors.text,
     marginBottom: 10,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  toggle: {
-    borderRadius: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-  },
-  toggleActive: {
-    backgroundColor: Colors.text,
-  },
-  toggleInactive: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  toggleActiveText: {
-    fontFamily: Fonts.sans,
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.bg,
-  },
-  toggleInactiveText: {
-    fontFamily: Fonts.sans,
-    fontSize: 14,
-    color: Colors.textSecondary,
   },
 });
