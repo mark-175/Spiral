@@ -99,53 +99,13 @@ loaded automatically when working on frontend screens.
   data model doesn't need to change when auth is added later. There is a single seeded user
   for now.
 
-## Repo Structure
-
-```
-/apps
-  /mobile-web   → Expo app (iOS, Android, Web)
-/server
-  /api          → Fastify + TypeScript
-  /prisma       → schema.prisma, migrations
-```
-
 ## Data Model (v1)
 
-**User**
+Schema is defined in `server/prisma/schema.prisma` — treat it as the source of truth for
+fields and types.
 
-- id, email, createdAt
-
-**Area**
-
-- id, userId, name, description (nullable), importance (int, 1–10), createdAt,
-  archivedAt (nullable — soft delete)
-
-**Goal**
-
-- id, areaId, name, description (nullable), targetDate (nullable), status
-  (`active` | `completed` | `abandoned`), createdAt, completedAt (nullable)
 - App-level rule: only one `active` Goal per Area at a time. Not enforced at the DB
   constraint level — enforce in application logic.
-
-**Action**
-
-- id, goalId, description, frequency (text label, free-form), createdAt,
-  archivedAt (nullable — soft delete)
-
-**ActionLog**
-
-- id, actionId, date, note (nullable)
-- One row per "I did this" event. This table is what will power streaks/frequency analytics
-  and any future scoring — do not replace with a boolean flag on Action.
-
-**DailyReview**
-
-- id, areaId, date, answers (JSON — keep flexible so prompt questions can change without a
-  migration), createdAt
-
-**WeeklyReflection**
-
-- id, areaId, weekStartDate, answers (JSON), createdAt
 
 ### Design notes for the schema
 
