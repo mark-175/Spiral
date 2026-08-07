@@ -330,16 +330,7 @@ Then open `https://spiral.marksa.nl` in a browser and click through:
 dashboard loads (empty state, since the DB is fresh), create an Area, set a
 goal, log a daily review, check history, submit a weekly reflection.
 
-## 12. One known limitation, going into this eyes-open
-
-Spiral has no authentication yet (v1 deliberately defers it — see
-`CLAUDE.md`). The API always operates as a single seeded user with no login.
-Once this is public at `spiral.marksa.nl`, **anyone who finds the URL can
-read and write that data** — there's nothing stopping them. Fine for a
-personal tool nobody else knows about; worth keeping in mind before sharing
-the link, and worth revisiting before this becomes anything more than that.
-
-## 13. Redeploying after future changes
+## 12. Redeploying after future changes
 
 ```bash
 cd /opt/spiral
