@@ -30,27 +30,14 @@ export default function RootLayout() {
     }
   }, [loading, isAuthenticated, isPublicRoute, router]);
 
-  if (loading) {
+  if (isAuthenticated && !isPublicRoute) {
     return (
       <View style={styles.root}>
         <StatusBar style="light" />
-      </View>
-    );
-  }
-
-  if (isPublicRoute && !isAuthenticated) {
-    return (
-      <View style={styles.root}>
-        <StatusBar style="light" />
-        <Slot />
-      </View>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <View style={styles.root}>
-        <StatusBar style="light" />
+        <Sidebar />
+        <ScrollView style={styles.main} contentContainerStyle={styles.mainContent}>
+          <Slot />
+        </ScrollView>
       </View>
     );
   }
@@ -58,10 +45,7 @@ export default function RootLayout() {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-      <Sidebar />
-      <ScrollView style={styles.main} contentContainerStyle={styles.mainContent}>
-        <Slot />
-      </ScrollView>
+      <Slot />
     </View>
   );
 }

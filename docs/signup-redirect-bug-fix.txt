@@ -1,0 +1,42 @@
+Bug: Clicking "Sign up" on the login page did not navigate to the signup page.
+
+Root cause
+----------
+apps/mobile-web/src/app/_layout.tsx re-checks the current session (GET /auth/me)
+on every route change, because `pathname` was included in the dependency array
+passed to useAsync:
+
+    const { data: user, loading } = useAsync(getCurrentUser, [pathname]);
+
+Each time `loading` flipped back to true (i.e. on every navigation), the layout
+rendered a branch that omitted <Slot />, expo-router's navigation outlet:
+
+    if (loading) {
+      return (
+        <View style={styles.root}>
+          <StatusBar style="light" />
+        </View>
+      );
+    }
+
+<Slot /> is the component that actually hosts the current route/screen. Removing
+it from the tree unmounts the whole navigator. So clicking "Sign up" would call
+router.push('/signup'), but the pathname change simultaneously re-triggered the
+auth check, which re-rendered the layout without <Slot /> and tore down the
+navigator mid-navigation -- dropping the in-flight route change and leaving the
+user stuck on /login.
+
+This is the same category of bug Expo Router itself used to have: their
+changelog documents moving their built-in Stack.Protected / Screen.Protected
+guards from "removing guarded screens from navigators" to "redirecting
+instead," specifically because removing screens from the navigator during an
+auth check breaks navigation.
+
+Fix
+---
+_layout.tsx now always renders <Slot />, in every branch, regardless of
+loading/auth state. Access control is enforced only through the existing
+useEffect, which imperatively calls router.replace('/login') or
+router.replace('/') when the auth state doesn't match the route. This mirrors
+Expo's own "redirect, don't remove" pattern and keeps the navigator mounted
+across every navigation, so pushes/replaces are never dropped mid-transition.
