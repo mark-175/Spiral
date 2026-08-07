@@ -1,12 +1,16 @@
 import { useRouter, usePathname } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 import { useAsync } from '@/hooks/useAsync';
 import { getAreaAccent } from '@/lib/accent';
 import { getAreas, logout } from '@/lib/api';
 import { Colors, Fonts } from '@/theme/tokens';
 
-export function Sidebar() {
+type SidebarProps = {
+  style?: StyleProp<ViewStyle>;
+};
+
+export function Sidebar({ style }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { data: areas } = useAsync(getAreas, [pathname]);
@@ -21,7 +25,7 @@ export function Sidebar() {
   const isWeeklyActive = pathname === '/weekly-reflection';
 
   return (
-    <View style={styles.sidebar}>
+    <View style={[styles.sidebar, style]}>
       <View style={styles.logoRow}>
         <View style={styles.logoMark} />
         <Text style={styles.logoText}>Spiral</Text>

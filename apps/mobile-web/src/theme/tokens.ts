@@ -45,3 +45,8 @@ export const MaxContentWidth = {
   page: 760,
   form: 560,
 } as const;
+
+// Below this window width, the persistent sidebar becomes a hidden drawer.
+export const Breakpoints = {
+  mobile: 768,
+} as const;
